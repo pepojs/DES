@@ -3,6 +3,7 @@ from ambulance_con import ambulanceState
 import hospital_con as hosp
 import sys
 from events_coding import *
+import random
 
 class Controller:
 	#Dane wejściowe do sterownika - liczba szpitali n i ich położenie locations, liczba karetek m, ograniczenia ze względu na rozmiar mapy xmax, ymax. 
@@ -61,7 +62,7 @@ class Controller:
 		if event=='E1o':
 			if len(value)==1: #weryfikacja definicji
 				if value[0][0]>=0 or value[0][0]<=self.Xmax or value[0][1]>=0 or value[0][1]<=self.Ymax: #warunek dopuszczalności  
-					print('Generuj zdarzenie E1c(',value[0][0],',',value[0][1],')') #Tu zadać funkcję!
+					print(self.generateE1c(value[0]))
 					return True
 				print('Otrzymane zdarzenie E1o jest niedopuszczalne!')
 				return False
@@ -97,7 +98,7 @@ class Controller:
 		elif event=='E5o':
 			if len(value)==3:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
-					print('Generuj zdarzenie E2c(',value[0][0],',',value[0][1],')') #Tu zadać funkcję!
+					print(self.generateE2c(value[0],value[1],value[2]))
 					return True
 				print('Otrzymane zdarzenie E5o jest niedopuszczalne')
 				return False
@@ -106,7 +107,7 @@ class Controller:
 		elif event=='E6o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMERGENCY_RIDE.value: #warunek dopuszczalności 
-					self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_HOSPITAL.value
+					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.PATIENT_SERVICE_HOSPITAL.value
 					return True
 				print('Otrzymane zdarzenie E6o jest niedopuszczalne')
 				return False
@@ -115,8 +116,8 @@ class Controller:
 		elif event=='E7o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_HOSPITAL.value: #warunek dopuszczalności 
-					self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.QUARANTINE.value
-					self.Hospitals[value[0]-1].prsonnel = True
+					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.QUARANTINE.value
+					self.Hospitals[value[0]-1].personnel = True
 					return True
 				print('Otrzymane zdarzenie E7o jest niedopuszczalne')
 				return False
@@ -125,7 +126,7 @@ class Controller:
 		elif event=='E8o':
 			if len(value)==2:
 				if self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.QUARANTINE.value: #warunek dopuszczalności 
-					self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.READY.value
+					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.READY.value
 					return True
 				print('Otrzymane zdarzenie E8o jest niedopuszczalne')
 				return False
@@ -134,7 +135,7 @@ class Controller:
 		elif event=='E9o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMPTY_RIDE.value: #warunek dopuszczalności 
-					self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.READY.value
+					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.READY.value
 					return True
 				print('Otrzymane zdarzenie E9o jest niedopuszczalne')
 				return False
@@ -143,7 +144,7 @@ class Controller:
 		elif event=='E10o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
-					self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMPTY_RIDE.value
+					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.EMPTY_RIDE.value
 					return True
 				print('Otrzymane zdarzenie E10o jest niedopuszczalne')
 				return False
@@ -153,6 +154,53 @@ class Controller:
 		print('Nie zdefiniowano takiego zdarzenia obserwowalnego')
 		return False
 		
+	#Generuje zdarzenie kontrolowalne nr 1
+	def generateE1c (self,location):
+		i,j = self.chooseHospital(location) #weryfikuje warunek dopuszczalności
+		if i > -1 and j > -1:
+			self.Hospitals[i-1].ambulances[j-1] = ambulanceState.EMERGENCY_RIDE.value
+			return code_event('E1c',[i,j,location])
+		
+	#Funkcja znajduje szpital znajdujący się najbliżej zgłoszonego miejsca zdarzenia
+	#Ze szpitala losowo wybierana jest dostępna karetka, która podejmuje akcje
+	#Jeśli nie zostanie znaleziony szpital, który może zrealizować zadanie, zwracane są wartości (-1, -1)
+	def chooseHospital(self,Lp):
+		dist = np.Inf
+		i = -1
+		j = -1
+		for iter in range(len(self.Hospitals)):
+			tmp_dist = np.sqrt(np.sum((self.Hospitals[iter].location-Lp)**2))
+			amb = np.where(self.Hospitals[iter].ambulances == ambulanceState.READY.value)[0].tolist()
+			if len(amb)>0:
+				if tmp_dist < dist:
+					i = iter+1
+					j = amb[random.randint(0,len(amb)-1)]
+					dist = tmp_dist
+		return i,j
+	
+	#Generuje zdarzenie E2c
+	def generateE2c (self,l,j,location):
+		i = self.findHospital(location) #weryfikuje warunek dopuszczalności
+		if i > -1:
+			self.Hospitals[i-1].personnel = False
+			self.Hospitals[i-1].ambulances[j-1] = ambulanceState.EMERGENCY_RIDE.value
+			if l!=i:
+				self.Hospitals[l-1].ambulances[j-1] = 0
+			return code_event('E2c',[i,location])
+	
+	#Funkcja znajduje szpital najbliżej miejsca zgłoszenia, który może aktualnie przyjąć chorego
+	def findHospital(self,Lp):
+		dist = np.Inf
+		i = -1
+		for iter in range(len(self.Hospitals)):
+			if self.Hospitals[iter].volume and self.Hospitals[iter].personnel:
+				tmp_dist = np.sqrt(np.sum((self.Hospitals[iter].location-Lp)**2))
+				if tmp_dist < dist:
+					i = iter+1
+					dist = tmp_dist
+		return i
+			
+				
 		
 		
 				
@@ -165,52 +213,76 @@ ymax = 100
 locations = np.random.rand(n,2)*[xmax,ymax]
 con = Controller(n,np.array(m),locations,xmax,ymax)
 con.printState()
-event = code_event('E1o', [[15,20]])
+
+#Test działają dla karetki nr 19 ze szpitala nr 3
+zgloszenie = [locations[2][0]-5, locations[2][1]-4]
+print('\n\n')
+event = code_event('E1o', [zgloszenie])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
 event = code_event('E2o', [4])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
 event = code_event('E3o', [4])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
-event = code_event('E4o', [4,19])
+event = code_event('E4o', [3,19,zgloszenie])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E5o', [3,19,zgloszenie])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E6o', [3,19])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E7o', [3,19])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E8o', [3,19])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E1o', [zgloszenie])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E4o', [3,19,zgloszenie])
+print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
+if con.observableEvents(event):
+	con.printState()
+print('\n\n')
+event = code_event('E10o', [3,19])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
-event = code_event('E5o', [2,10])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E6o', [4,12])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E7o', [4,12])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E8o', [4,12])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E9o', [4,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E10o', [4,19])
+event = code_event('E9o', [3,19])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
 if con.observableEvents(event):
 	con.printState()
