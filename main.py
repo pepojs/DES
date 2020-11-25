@@ -9,7 +9,8 @@ def main():
         sim.simulatorMianLoop()
 
     events = messageController.readAllObservableEvents()
-    messageController.addControllableEvents('E1c', [0,0,[events[0][1][0], events[0][1][0]]])
+    messageController.addControllableEvents('E1c', [0,0,[events[0][1][0], events[0][1][1]]])
+    sim.simulatorMianLoop()
 
 if __name__ == '__main__':
     main()

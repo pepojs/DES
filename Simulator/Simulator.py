@@ -104,7 +104,8 @@ class Simulator():
             if event[0] == 'E1c':
                 startTime = self.__time
 
-                distance = np.sqrt(np.sum((self.__hospitalsList[event[1][0]-1].location-event[1][2])**2))
+                distance = np.sqrt((self.__hospitalsList[event[1][0]-1].location[0]-event[1][2][0])**2 +
+                                   (self.__hospitalsList[event[1][0]-1].location[1]-event[1][2][1])**2)
                 finishTime = startTime + int(random.normal(distance, self.__sigmaAmbulance))
                 while finishTime <= startTime:
                     finishTime = startTime + int(random.normal(distance, self.__sigmaAmbulance))
@@ -114,8 +115,7 @@ class Simulator():
                 self.__ambulancesList[event[1][1]].setStartTime(startTime)
                 self.__ambulancesList[event[1][1]].setFinishTime(finishTime)
 
-                emergencyNumber = self.__emergenciesMap[event[1][2]]
-                print(emergencyNumber)
+                emergencyNumber = self.__emergenciesMap[(event[1][2][0], event[1][2][1])]
                 self.__emergenciesList[emergencyNumber].serviceEmergency()
 
     def updateState(self):
