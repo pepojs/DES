@@ -1,21 +1,14 @@
 from enum import Enum
-
-class AmbulanceState(Enum):
-    READY = 0
-    EMPTY_RIDE = 1
-    EMERGENCY_RIDE = 2
-    PATIENT_SERVICE_HOSPITAL = 3
-    PATIENT_SERVICE_AWAY = 4
-    QUARANTINE = 5
+from Controller.ambulance_con import ambulanceState
 
 class Ambulance():
     def __init__(self):
-        self.__state = AmbulanceState.READY
+        self.__state = ambulanceState.READY
         self.__aimLocation = (0,0)
         self.__startTime = 0
         self.__finishTime = 0
 
-    def setAmbulanceState(self, newState: AmbulanceState):
+    def setAmbulanceState(self, newState: ambulanceState):
         self.__state = newState
 
     def setAimLocation(self, newAim):

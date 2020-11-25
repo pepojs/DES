@@ -36,9 +36,4 @@ class Hospital():
     def getAmbulancesList(self):
         return self.__ambulanceList
 
-    def sendAmbulanceToEmergency(self, ambulanceNumber):
-        pass
-
-    def sendAmbulanceToHospital(self, ambulanceNumber, hospitalNumber):
-        pass
 
