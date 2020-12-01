@@ -170,11 +170,11 @@ class Controller:
 		j = -1
 		for iter in range(len(self.Hospitals)):
 			tmp_dist = np.sqrt(np.sum((self.Hospitals[iter].location-Lp)**2))
-			amb = np.where(self.Hospitals[iter].ambulances == ambulanceState.READY.value)[0].tolist()
-			if len(amb)>0:
+			amb = self.chooseFreeAmbulance(self.Hospitals[iter],1)
+			if amb>-1:
 				if tmp_dist < dist:
 					i = iter+1
-					j = amb[random.randint(0,len(amb)-1)]
+					j = amb+1
 					dist = tmp_dist
 		return i,j
 	
@@ -199,20 +199,100 @@ class Controller:
 					i = iter+1
 					dist = tmp_dist
 		return i
+		
+	#Zdarzenie może nie zostać wywołane - nałożony dodatkowy warunek dopuszczalności, że szpitale i,j muszą być dostatecznie blisko siebie
+	def generateE3c(self,i,j,k):
+		self.Hospitals[i-1].ambulances[k-1] = 0
+		self.Hospitals[j-1].ambulances[k-1] = ambulanceState.EMPTY_RIDE.value
+		return code_event('E3c',[i,j,k])
+	
+	#Sprawdza, w których szpitalach nie ma dostępnych ambulansów
+	#Jeśli do szpitala zmierza ambulans z pustym przejazdem, to taki szpital również jest pomijany
+	def lackOfAmbulances(self):
+		emptyHospitals = []
+		for idx in range(len(self.Hospitals)):
+			i = 0
+			length = len(self.Hospitals[idx].ambulances)
+			while i<length:
+				if self.Hospitals[idx].ambulances[i] == ambulanceState.READY.value or self.Hospitals[idx].ambulances[i] == ambulanceState.EMPTY_RIDE.value:
+					break
+				i = i+1
+			if i==length:
+				emptyHospitals.append(idx+1)		
+		return emptyHospitals
+	
+	#Funkcja weryfikuje, w których szpitalach nie ma gotowych karetek
+	#Następnie, dla każdego znalezionego szpitala znajduje szpitale, które znajdują się dostatecznie blisko
+	#Spośród tych szpitali wybiera najbliższy, w którym dostępne są co najmniej 3 karetki
+	#Jeśli znajdzie taki szpital, to generuje zdarzenie kontrolowalne E3c
+	#	radius - promień poszukiwań pobliskiego szpitala
+	#	minAmbulances - minimalna liczba karetek w pobliskim szpitalu, aby móc prosić go o pomoc
+	def ambulanceArrangementCheck(self,radius,minAmbulances):
+		emptyHospitals = self.lackOfAmbulances()
+		if len(emptyHospitals)>0:
+			for j in emptyHospitals:
+				close,dist = self.nearHospital(j-1,radius)
+				itr = 0
+				length = len(close)
+				while itr < length:
+					ind = dist.index(min(dist))
+					dist.pop(ind)
+					i = close[ind]
+					close.pop(ind)
+					k = self.chooseFreeAmbulance(self.Hospitals[i-1],minAmbulances)
+					if k > -1: #warunek dopuszczalności
+						print(self.generateE3c(i,j,k+1))
+						break
+					itr = itr + 1
+	
+	#Znajduje szpitale bliskie wskazanemu szpitalu. Szpitale muszą się znajdować odpowiednio blisko.
+	#	hospital - indeks szpitala, do którego poszukujemy bliskich szpitali
+	#	radius - promień obszaru, w którym szukamy szpitala
+	def nearHospital(self,hospital,radius):
+		min_dist = abs(max(self.Xmax*radius,self.Ymax*radius))
+		close = []
+		dist = []
+		for iter in range(len(self.Hospitals)):
+			if iter != hospital-1:
+				tmp_dist = np.sqrt(np.sum((self.Hospitals[iter].location-self.Hospitals[hospital].location)**2))
+				if tmp_dist > 0 and tmp_dist <= min_dist:
+					close.append(iter+1)
+					dist.append(tmp_dist)
+		return close,dist
+		
+	#Funkcja losująca ambulans ze wszystkich dostępnych w danym szpitalu.
+	#Jeśli nie ma takiego ambulansu, to funkcja zwraca -1.
+	#	hospital - szpital, z którego wybierany ambulans
+	#	minAmbulances - minimalna liczba karetek, która musi znajdować się w szpitalu przed wylosowaniem
+	def chooseFreeAmbulance(self,hospital,minAmbulances):
+		amb = np.where(hospital.ambulances == ambulanceState.READY.value)[0].tolist()
+		if len(amb)>=minAmbulances:
+			j = amb[random.randint(0,len(amb)-1)]
+			return j
+		return -1
 			
-				
-		
-		
 				
 
 #Próba wypisania aktualnego stanu i reakcji na zdarzenia
 n=5
 m=[7]
+#m=[5,4,0,2,0] #Do weryfikacji zdarzenia E3c
 xmax = 100
 ymax = 100
 locations = np.random.rand(n,2)*[xmax,ymax]
 con = Controller(n,np.array(m),locations,xmax,ymax)
+
 con.printState()
+#print('\n')
+#print('E3c - TESTY')
+#print('############E3c############')
+#con.ambulanceArrangementCheck(0.7,3)
+#con.printState()
+#print('\n')
+#con.ambulanceArrangementCheck(0.7,3)
+#con.printState()
+#print('############E3c############')
+#print('\n')
 
 #Test działają dla karetki nr 19 ze szpitala nr 3
 zgloszenie = [locations[2][0]-5, locations[2][1]-4]
@@ -279,11 +359,13 @@ if con.observableEvents(event):
 print('\n\n')
 event = code_event('E10o', [3,19])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
 event = code_event('E9o', [3,19])
 print('EVENT!!!!!!!!!!!!!!!!!!!')
+print(event)
 if con.observableEvents(event):
 	con.printState()
 print('\n\n')
