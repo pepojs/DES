@@ -13,7 +13,7 @@ class Hospital():
         if self.occupiedBeds < self.maxNumberOfBeds:
             self.occupiedBeds = self.occupiedBeds + 1
             self.personnelAreAvailable = False
-            self.ambulanceList.append(len(self.ambulanceList), ambulanceNumber)
+            self.__ambulanceList.append(ambulanceNumber)
             return True
         else:
             return False

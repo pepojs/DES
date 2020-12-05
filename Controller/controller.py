@@ -1,32 +1,46 @@
+from Controller.ambulance_con import ambulanceState
+from Simulator.Simulator import SimulatorSettings
+import Controller.hospital_con as hosp
 import numpy as np
-from ambulance_con import ambulanceState
-import hospital_con as hosp
-import sys
-from events_coding import *
 import random
+import sys
+#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES') #Wybrać ścieżkę na danym komputerze
+import MessageController
 
 class Controller:
 	#Dane wejściowe do sterownika - liczba szpitali n i ich położenie locations, liczba karetek m, ograniczenia ze względu na rozmiar mapy xmax, ymax. 
 	#Liczba karetek zadawana w formie wektora Numpy.
 	#Można zadać odmienną liczbę karetek dla każdego szpitala lub podać jedną wartość - tyle samo karetek w każdym szpitalu
-	def __init__(self,n,m,locations,xmax,ymax):
-		self.Xmax = xmax
-		self.Ymax = ymax
+	def __init__(self,settings: SimulatorSettings, hospital_locations, msgController: MessageController):
+		self.Xmax = settings.maxX
+		self.Ymax = settings.maxY
 		self.Hospitals = []
-		self.ambulanceMatrix = self.createAmbulanceMatrix(n,m)
-		#self.eventList = []
-		for i in range(n):
-			self.Hospitals.append(hosp.hospital_con(locations[i],self.ambulanceMatrix[i]))
-		
-		
+		self.ambulanceMatrix = self.createAmbulanceMatrix(settings.numberOfHospital,settings.numberOfAmbulances)
+		self.messageController = msgController
+		for i in range(settings.numberOfHospital):
+			self.Hospitals.append(hosp.hospital_con(hospital_locations[i],self.ambulanceMatrix[i]))
+			
+	def controllerMainLoop(self):
+		events = self.messageController.readAllObservableEvents()
+		for event in events:
+			event_name = event[0]
+			event_value = event[1]
+			
+			if not (self.observableEvents(event_name,event_value)):
+				print('Event {} cannot be executed!',event_name)
+				self.messageController.addObservableEvent(event_name,event_value)
+		self.ambulanceArrangementCheck(0.3,3)
+		#self.printState()
+			
+				
 	
 	def createAmbulanceMatrix(self,n,m):
-		if len(m)==1:
-			A = np.zeros((n,n*sum(m)))
+		if isinstance(m,int):
+			A = np.zeros((n,m))
 			for i in range(n):
-				for j in range(i*m[0],(i+1)*m[0]):
+				for j in range(i*int(m/n),(i+1)*int(m/n)):
 					A[i][j] = ambulanceState.READY.value
-		elif len(m)>1:
+		else:
 			A = np.zeros((n,sum(m)))
 			for i in range(n):
 				for j in range(sum(m[:i]),sum(m[:(i+1)])):
@@ -49,21 +63,16 @@ class Controller:
 			print(ambulance_state)
 			print("################")
 			ambulance_state.clear()
-		print('Lists of awaiting events:')
-		#for item in self.eventList:
-		#	print(item)
 	
 	#Odbieranie zdarzeń obserwowalnych
 	#Funkcja rozpoznaję nazwę zdarzenia i sprawdza, czy zdefiniowano odpowiednią liczbę parametrów
 	#Ponadto sprawdzane są warunki dopuszczalności zdarzeń
 	#Komendy typu 'finish_ij' należy przekazywać jako dwie osobne liczby i, j
-	def observableEvents(self,coded_event):
-		event, value = decode_event(coded_event)
+	def observableEvents(self,event,value):
 		if event=='E1o':
 			if len(value)==1: #weryfikacja definicji
 				if value[0][0]>=0 or value[0][0]<=self.Xmax or value[0][1]>=0 or value[0][1]<=self.Ymax: #warunek dopuszczalności  
-					print(self.generateE1c(value[0]))
-					return True
+					return self.generateE1c(value[0])
 				print('Otrzymane zdarzenie E1o jest niedopuszczalne!')
 				return False
 			print('Błędna definicja zdarzenia E1o')
@@ -98,8 +107,7 @@ class Controller:
 		elif event=='E5o':
 			if len(value)==3:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
-					print(self.generateE2c(value[0],value[1],value[2]))
-					return True
+					return self.generateE2c(value[0],value[1],value[2])
 				print('Otrzymane zdarzenie E5o jest niedopuszczalne')
 				return False
 			print('Błędna definicja zdarzenia E5o')
@@ -159,7 +167,10 @@ class Controller:
 		i,j = self.chooseHospital(location) #weryfikuje warunek dopuszczalności
 		if i > -1 and j > -1:
 			self.Hospitals[i-1].ambulances[j-1] = ambulanceState.EMERGENCY_RIDE.value
-			return code_event('E1c',[i,j,location])
+			self.messageController.addControllableEvents('E1c',[i,j,location])
+			return True
+		print('Nie znaleziono odpowiedniego szpitala szpitala!')
+		return False
 		
 	#Funkcja znajduje szpital znajdujący się najbliżej zgłoszonego miejsca zdarzenia
 	#Ze szpitala losowo wybierana jest dostępna karetka, która podejmuje akcje
@@ -186,7 +197,10 @@ class Controller:
 			self.Hospitals[i-1].ambulances[j-1] = ambulanceState.EMERGENCY_RIDE.value
 			if l!=i:
 				self.Hospitals[l-1].ambulances[j-1] = 0
-			return code_event('E2c',[i,location])
+			self.messageController.addControllableEvents('E2c',[i,location])
+			return True
+		print('Nie znaleziono odpowiedniego szpitala!')
+		return False
 	
 	#Funkcja znajduje szpital najbliżej miejsca zgłoszenia, który może aktualnie przyjąć chorego
 	def findHospital(self,Lp):
@@ -204,7 +218,7 @@ class Controller:
 	def generateE3c(self,i,j,k):
 		self.Hospitals[i-1].ambulances[k-1] = 0
 		self.Hospitals[j-1].ambulances[k-1] = ambulanceState.EMPTY_RIDE.value
-		return code_event('E3c',[i,j,k])
+		self.messageController.addControllableEvents('E3c',[i,j,k])
 	
 	#Sprawdza, w których szpitalach nie ma dostępnych ambulansów
 	#Jeśli do szpitala zmierza ambulans z pustym przejazdem, to taki szpital również jest pomijany
@@ -241,7 +255,7 @@ class Controller:
 					close.pop(ind)
 					k = self.chooseFreeAmbulance(self.Hospitals[i-1],minAmbulances)
 					if k > -1: #warunek dopuszczalności
-						print(self.generateE3c(i,j,k+1))
+						self.generateE3c(i,j,k+1)
 						break
 					itr = itr + 1
 	
@@ -270,102 +284,3 @@ class Controller:
 			j = amb[random.randint(0,len(amb)-1)]
 			return j
 		return -1
-			
-				
-
-#Próba wypisania aktualnego stanu i reakcji na zdarzenia
-n=5
-m=[7]
-#m=[5,4,0,2,0] #Do weryfikacji zdarzenia E3c
-xmax = 100
-ymax = 100
-locations = np.random.rand(n,2)*[xmax,ymax]
-con = Controller(n,np.array(m),locations,xmax,ymax)
-
-con.printState()
-#print('\n')
-#print('E3c - TESTY')
-#print('############E3c############')
-#con.ambulanceArrangementCheck(0.7,3)
-#con.printState()
-#print('\n')
-#con.ambulanceArrangementCheck(0.7,3)
-#con.printState()
-#print('############E3c############')
-#print('\n')
-
-#Test działają dla karetki nr 19 ze szpitala nr 3
-zgloszenie = [locations[2][0]-5, locations[2][1]-4]
-print('\n\n')
-event = code_event('E1o', [zgloszenie])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E2o', [4])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E3o', [4])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E4o', [3,19,zgloszenie])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E5o', [3,19,zgloszenie])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E6o', [3,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E7o', [3,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E8o', [3,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E1o', [zgloszenie])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E4o', [3,19,zgloszenie])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E10o', [3,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')
-event = code_event('E9o', [3,19])
-print('EVENT!!!!!!!!!!!!!!!!!!!')
-print(event)
-if con.observableEvents(event):
-	con.printState()
-print('\n\n')

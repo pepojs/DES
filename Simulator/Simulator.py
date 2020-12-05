@@ -1,3 +1,6 @@
+#import sys
+#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES')
+#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES/Controller')
 from Simulator.Hospital import Hospital
 from Simulator.Ambulance import Ambulance
 from Simulator.Emergency import Emergency
@@ -104,7 +107,7 @@ class Simulator():
                 y = random.randint(0, self.__simulationSettings.maxY)
 
             self.__emergenciesMap[(x, y)] = Emergency((x,y), self.__thresholdForEmergency)
-            self.__messageController.addObservableEvent('E1o', [x, y])
+            self.__messageController.addObservableEvent('E1o', [[x, y]])
             print("New emergency, location: ", (x, y))
 
     def inputControllerEvents(self):
@@ -186,6 +189,9 @@ class Simulator():
 
                 print("Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
 
+    def hospitalsLocations(self):
+    	return np.array(list(self.__hospitalsMap.keys()))
+    	
     def updateState(self):
         for i in range(len(self.__ambulancesList)):
             if self.__ambulancesList[i].getFinishTime() == self.__time:
