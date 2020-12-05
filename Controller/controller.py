@@ -4,7 +4,6 @@ import Controller.hospital_con as hosp
 import numpy as np
 import random
 import sys
-#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES') #Wybrać ścieżkę na danym komputerze
 import MessageController
 
 class Controller:

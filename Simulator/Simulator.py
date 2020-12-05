@@ -1,6 +1,3 @@
-#import sys
-#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES')
-#sys.path.append('/home/filipd/Dokumenty/Mgr/DES/DES/Controller')
 from Simulator.Hospital import Hospital
 from Simulator.Ambulance import Ambulance
 from Simulator.Emergency import Emergency
