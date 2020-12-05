@@ -21,14 +21,28 @@ class Controller:
 			
 	def controllerMainLoop(self):
 		events = self.messageController.readAllObservableEvents()
+		events_priority = []
+		length = len(events)
+		for i in range(length): #Kryterium jakościowe
+			if events[i][0]=='E2o' or events[i][0]=='E3o':
+				events_priority.append(events[i])
+				
+		for event in events_priority:
+			events.remove(event) #Te zdarzenia rozpatrujemy najpierw
+			event_name = event[0]
+			event_value = event[1]
+			if not (self.observableEvents(event_name,event_value)):
+				#print('Event {} cannot be executed!',event_name)
+				self.messageController.addObservableEvent(event_name,event_value)
+
 		for event in events:
 			event_name = event[0]
 			event_value = event[1]
-			
 			if not (self.observableEvents(event_name,event_value)):
-				print('Event {} cannot be executed!',event_name)
+				#print('Event {} cannot be executed!',event_name)
 				self.messageController.addObservableEvent(event_name,event_value)
-		self.ambulanceArrangementCheck(0.3,3)
+				
+		self.ambulanceArrangementCheck(0.3,3) #Kryterium ilościowe nr 2
 		#self.printState()
 			
 				
