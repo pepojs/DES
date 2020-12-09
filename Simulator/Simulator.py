@@ -320,7 +320,10 @@ class Simulator():
         for i in range(len(self.__hospitalsList)):
             if self.__hospitalsList[i].timeToEmptyBed == self.__time:
                 if self.__hospitalsList[i].occupiedBeds > 0:
-                    self.__messageController.addObservableEvent('E3o', [i + 1])
+
+                    if self.__hospitalsList[i].occupiedBeds == self.__hospitalsList[i].maxNumberOfBeds:
+                        self.__messageController.addObservableEvent('E3o', [i + 1])
+
                     self.__hospitalsList[i].occupiedBeds -= 1
 
                     if self.__hospitalsList[i].occupiedBeds > 0:
