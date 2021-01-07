@@ -1,0 +1,9 @@
+from enum import Enum
+
+class ambulanceState(Enum):
+	EMPTY_RIDE = 1
+	EMERGENCY_RIDE = 2
+	PATIENT_SERVICE_HOSPITAL = 3
+	PATIENT_SERVICE_AWAY = 4
+	QUARANTINE = 5
+	READY = 6

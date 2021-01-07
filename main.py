@@ -13,8 +13,8 @@ def main():
 	for i in range(1000):
         	sim.simulatorMianLoop()
         	con.controllerMainLoop()
-        	i = input()
-        	if i=='y': #write y to show the current state
+        	in_data = input()
+        	if in_data=='y': #write y to show the current state
         		con.printState()
         	#writ anything else to continue
 
