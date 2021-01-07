@@ -2,29 +2,56 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
 from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets, uic,QtCore
+from PyQt5 import QtWidgets, uic,QtCore,QtTest
 from MainWindow import Ui_MainWindow
 from Controller.controller import Controller
 from Simulator.Simulator import Simulator, SimulatorSettings
 from MessageController import MessageController
 import numpy as np
+import time
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self,hospitals,onj=None,*args,**kwargs):
+    def __init__(self,onj=None,*args,**kwargs):
         super(MainWindow,self).__init__(*args,**kwargs)
         self.ui=Ui_MainWindow()
         self.ui.setupUi(self)
+        self.messageController = MessageController()
+        self.simSettings = SimulatorSettings()
+        self.sim = Simulator(self.simSettings, self.messageController)
+        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.messageController)
         self.ui.Mplwidget
-        self.ui.Mplwidget.draw_hospital_on_map(hospitals)
+        self.ui.Mplwidget.draw_hospital_on_map(self.con.Hospitals)
         self.ui.hospwidget
-        self.ui.hospwidget.draw_all_hosp_inf(hospitals)
+        self.ui.hospwidget.draw_all_hosp_inf(self.con.Hospitals)
         self.tablica_komunikatow=[]
-        self.ui.start.clicked.connect(self.btn_sig)
+        self.ui.start.clicked.connect(self.start_sim)
+        self.ui.pauza.clicked.connect(self.stop_sim)
+        self.ui.delay_time.setValue(50)
+        self.ui.delay_time.valueChanged.connect(self.change_interval)
+        self.timer = QtCore.QTimer(self, interval=self.ui.delay_time.value(), timeout=self.simulation)
 
-    def btn_sig(self):
-        self.ui.Mplwidget.ride_to_emergency((100,100), (350,250), 2, 10)
 
+    @QtCore.pyqtSlot()
+    def start_sim(self):
+        QtCore.QTimer.singleShot(0, self.simulation)
+        self.timer.start()
+
+    @QtCore.pyqtSlot()
+    def stop_sim(self):
+        self.timer.stop()
+
+    def reset_sim(self):
+        pass
+
+    def change_interval(self):
+        self.timer.setInterval(self.ui.delay_time.value())
+
+    def simulation(self):
+        self.sim.simulatorMianLoop(self.tablica_komunikatow)
+        self.update_widgets_scrol()
+        self.update_hospital_state(self.con.Hospitals)
+        self.con.controllerMainLoop()
 
     def update_widgets_scrol(self):
         for elem in self.tablica_komunikatow:
@@ -60,24 +87,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    messageController = MessageController()
-    simSettings = SimulatorSettings()
-    sim = Simulator(simSettings, messageController)
-    con = Controller(simSettings, sim.hospitalsLocations(), messageController)
+
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(con.Hospitals)
+    window = MainWindow()
     window.show()
-    window.ui.Mplwidget.draw_accident_on_map((250,250))
-    window.ui.Mplwidget.draw_accident_on_map((350,250))
-    import time
 
+#    window.ui.Mplwidget.draw_accident_on_map((250,250))
+#    window.ui.Mplwidget.draw_accident_on_map((350,250))
 
-    for i in range(1000):
-        sim.simulatorMianLoop(window.tablica_komunikatow)
-        con.controllerMainLoop()
-#        time.sleep(1)
-        window.update_widgets_scrol()
-        window.update_hospital_state(con.Hospitals)
 #        print('!!!!!!!!!!!')
 #        print(con.messageController.readAllObservableEvents())
 #        print('!!!!!!!!!!!')

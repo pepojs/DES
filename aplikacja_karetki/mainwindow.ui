@@ -45,6 +45,29 @@
        </property>
       </widget>
      </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="label_8">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Czas wykonania jednej iteracji w ms</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="delay_time"/>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
    <widget class="QLabel" name="label">
@@ -213,7 +236,7 @@
      <x>0</x>
      <y>0</y>
      <width>1168</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
