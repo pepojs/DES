@@ -19,7 +19,7 @@ class Controller:
 		for i in range(settings.numberOfHospital):
 			self.Hospitals.append(hosp.hospital_con(hospital_locations[i],self.ambulanceMatrix[i]))
 			
-	def controllerMainLoop(self):
+	def controllerMainLoop(self,tablica_komunikatow):
 		events = self.messageController.readAllObservableEvents()
 		events_priority = []
 		length = len(events)
@@ -31,14 +31,14 @@ class Controller:
 			events.remove(event) #Te zdarzenia rozpatrujemy najpierw
 			event_name = event[0]
 			event_value = event[1]
-			if not (self.observableEvents(event_name,event_value)):
+			if not (self.observableEvents(event_name,event_value,tablica_komunikatow)):
 				#print('Event {} cannot be executed!',event_name)
 				self.messageController.addObservableEvent(event_name,event_value)
 
 		for event in events:
 			event_name = event[0]
 			event_value = event[1]
-			if not (self.observableEvents(event_name,event_value)):
+			if not (self.observableEvents(event_name,event_value,tablica_komunikatow)):
 				#print('Event {} cannot be executed!',event_name)
 				self.messageController.addObservableEvent(event_name,event_value)
 				
@@ -81,58 +81,70 @@ class Controller:
 	#Funkcja rozpoznaję nazwę zdarzenia i sprawdza, czy zdefiniowano odpowiednią liczbę parametrów
 	#Ponadto sprawdzane są warunki dopuszczalności zdarzeń
 	#Komendy typu 'finish_ij' należy przekazywać jako dwie osobne liczby i, j
-	def observableEvents(self,event,value):
+	def observableEvents(self,event,value,tablica_komunikatow):
 		if event=='E1o':
 			if len(value)==1: #weryfikacja definicji
 				if value[0][0]>=0 or value[0][0]<=self.Xmax or value[0][1]>=0 or value[0][1]<=self.Ymax: #warunek dopuszczalności  
-					return self.generateE1c(value[0])
-				print('Otrzymane zdarzenie E1o jest niedopuszczalne!')
+					return self.generateE1c(value[0],tablica_komunikatow)
+				# print('Otrzymane zdarzenie E1o jest niedopuszczalne!')
+				tablica_komunikatow.append('Otrzymane zdarzenie E1o jest niedopuszczalne!')
 				return False
-			print('Błędna definicja zdarzenia E1o')
+			# print('Błędna definicja zdarzenia E1o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E1o')
 			return False
 		elif event=='E2o':
 			if len(value)==1:
 				if  self.Hospitals[value[0]-1].volume == True: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].volume = False
 					return True
-				print('Otrzymane zdarzenie E2o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E2o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E2o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E2o')
+			# print('Błędna definicja zdarzenia E2o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E2o')
 			return False
 		elif event=='E3o':
 			if len(value)==1:
 				if  self.Hospitals[value[0]-1].volume == False: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].volume = True
 					return True
-				print('Otrzymane zdarzenie E3o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E3o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E3o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E3o')
+			# print('Błędna definicja zdarzenia E3o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E3o')
 			return False
 		elif event=='E4o':
 			if len(value)==3:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMERGENCY_RIDE.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.PATIENT_SERVICE_AWAY.value
 					return True
-				print('Otrzymane zdarzenie E4o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E4o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E4o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E4o')
+			# print('Błędna definicja zdarzenia E4o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E4o')
 			return False
 		elif event=='E5o':
 			if len(value)==3:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
-					return self.generateE2c(value[0],value[1],value[2])
-				print('Otrzymane zdarzenie E5o jest niedopuszczalne')
+					return self.generateE2c(value[0],value[1],value[2],tablica_komunikatow)
+				# print('Otrzymane zdarzenie E5o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E5o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E5o')
+			# print('Błędna definicja zdarzenia E5o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E5o')
 			return False
 		elif event=='E6o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMERGENCY_RIDE.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.PATIENT_SERVICE_HOSPITAL.value
 					return True
-				print('Otrzymane zdarzenie E6o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E6o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E6o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E6o')
+			# print('Błędna definicja zdarzenia E6o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E6o')
 			return False
 		elif event=='E7o':
 			if len(value)==2:
@@ -140,49 +152,59 @@ class Controller:
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.QUARANTINE.value
 					self.Hospitals[value[0]-1].personnel = True
 					return True
-				print('Otrzymane zdarzenie E7o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E7o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E7o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E7o')
+			# print('Błędna definicja zdarzenia E7o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E7o')
 			return False
 		elif event=='E8o':
 			if len(value)==2:
 				if self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.QUARANTINE.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.READY.value
 					return True
-				print('Otrzymane zdarzenie E8o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E8o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E8o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E8o')
+			# print('Błędna definicja zdarzenia E8o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E8o')
 			return False
 		elif event=='E9o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.EMPTY_RIDE.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.READY.value
 					return True
-				print('Otrzymane zdarzenie E9o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E9o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E9o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E9o')
+			# print('Błędna definicja zdarzenia E9o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E9o')
 			return False
 		elif event=='E10o':
 			if len(value)==2:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.EMPTY_RIDE.value
 					return True
-				print('Otrzymane zdarzenie E10o jest niedopuszczalne')
+				# print('Otrzymane zdarzenie E10o jest niedopuszczalne')
+				tablica_komunikatow.append('Otrzymane zdarzenie E10o jest niedopuszczalne')
 				return False
-			print('Błędna definicja zdarzenia E10o')
+			# print('Błędna definicja zdarzenia E10o')
+			tablica_komunikatow.append('Błędna definicja zdarzenia E10o')
 			return False
 			
-		print('Nie zdefiniowano takiego zdarzenia obserwowalnego')
+		# print('Nie zdefiniowano takiego zdarzenia obserwowalnego')
+		tablica_komunikatow.append('Nie zdefiniowano takiego zdarzenia obserwowalnego')
 		return False
 		
 	#Generuje zdarzenie kontrolowalne nr 1
-	def generateE1c (self,location):
+	def generateE1c (self,location,tablica_komunikatow):
 		i,j = self.chooseHospital(location) #weryfikuje warunek dopuszczalności
 		if i > -1 and j > -1:
 			self.Hospitals[i-1].ambulances[j-1] = ambulanceState.EMERGENCY_RIDE.value
 			self.messageController.addControllableEvents('E1c',[i,j,location])
 			return True
-		print('Nie znaleziono odpowiedniego szpitala szpitala!')
+		# print('Nie znaleziono odpowiedniego szpitala szpitala!')
+		tablica_komunikatow.append('Nie znaleziono odpowiedniego szpitala szpitala!')
 		return False
 		
 	#Funkcja znajduje szpital znajdujący się najbliżej zgłoszonego miejsca zdarzenia
@@ -203,7 +225,7 @@ class Controller:
 		return i,j
 	
 	#Generuje zdarzenie E2c
-	def generateE2c (self,l,j,location):
+	def generateE2c (self,l,j,location,tablica_komunikatow):
 		i = self.findHospital(location) #weryfikuje warunek dopuszczalności
 		if i > -1:
 			self.Hospitals[i-1].personnel = False
@@ -212,7 +234,8 @@ class Controller:
 				self.Hospitals[l-1].ambulances[j-1] = 0
 			self.messageController.addControllableEvents('E2c',[i,location])
 			return True
-		print('Nie znaleziono odpowiedniego szpitala!')
+		# print('Nie znaleziono odpowiedniego szpitala!')
+		tablica_komunikatow.append('Nie znaleziono odpowiedniego szpitala!')
 		return False
 	
 	#Funkcja znajduje szpital najbliżej miejsca zgłoszenia, który może aktualnie przyjąć chorego

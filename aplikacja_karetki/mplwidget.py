@@ -61,7 +61,8 @@ class MplWidget(QWidget):
             imagebox= OffsetImage(img,zoom=0.02)
             ab = AnnotationBbox(imagebox,(hospitals[i].location[0],hospitals[i].location[1]))
             self.canvas.axes.add_artist(ab)
-            self.canvas.axes.text(hospitals[i].location[0]-5,hospitals[i].location[1]+6,str(i+1),zorder=1000,fontSize=6)
+            self.canvas.axes.text(hospitals[i].location[0]-5,hospitals[i].location[1]+6,str(i+1),zorder=1000,fontSize=6, color='red')
+        self.canvas.draw()
 #        for i in range(len(hospitals):
 #            hospital_location = QWidget()
 #            id_hospital = QLabel(i+1)
@@ -75,6 +76,13 @@ class MplWidget(QWidget):
 #            hospital_location.setLayout(vbox)
 #            hospital_location.setGeometry(hospitals[i].location[0],hospitals[i].location[1],10,10)
 #            self.canvas.axes.plot
+
+    def clean_hospital_on_map(self):
+        import matplotlib
+        for artist in self.canvas.axes.get_children():
+            if isinstance(artist,AnnotationBbox) or (isinstance(artist,matplotlib.text.Text) and artist._remove_method):
+                artist.remove()
+        self.canvas.draw()
 
     def draw_accident_on_map(self,location):
         img = plt.imread('crash.PNG',0)

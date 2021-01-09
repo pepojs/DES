@@ -20,11 +20,23 @@ class MessageController():
         self.__observableEventsBuffer.clear()
         return events
 
+    def readAllObservableEventsForSimulation(self):
+        events = []
+        for i in self.__observableEventsBuffer:
+            events.append(self.decode_event(i))
+        return events
+
     def readAllControllableEvents(self):
         events = []
         for i in self.__controllableEventsBuffer:
             events.append(self.decode_event(i))
         self.__controllableEventsBuffer.clear()
+        return events
+
+    def readAllControllableEventsForSimulation(self):
+        events = []
+        for i in self.__controllableEventsBuffer:
+            events.append(self.decode_event(i))
         return events
 
     # Konwertowanie zdarzenia i paremtrów je opisujących do zwartej postacji JSON

@@ -25,8 +25,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.hospwidget
         self.ui.hospwidget.draw_all_hosp_inf(self.con.Hospitals)
         self.tablica_komunikatow=[]
+        self.control_events=[]
+        self.observ_from_message=[]
         self.ui.start.clicked.connect(self.start_sim)
         self.ui.pauza.clicked.connect(self.stop_sim)
+        self.ui.reset.clicked.connect(self.reset_sim)
         self.ui.delay_time.setValue(50)
         self.ui.delay_time.valueChanged.connect(self.change_interval)
         self.timer = QtCore.QTimer(self, interval=self.ui.delay_time.value(), timeout=self.simulation)
@@ -42,22 +45,98 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.stop()
 
     def reset_sim(self):
-        pass
+        del self.messageController
+        del self.simSettings
+        del self.sim
+        del self.con
+        self.ui.Mplwidget.clean_hospital_on_map()
+        self.ui.hospwidget.clean_all_hosp_inf()
+        self.clear_widget_scrol()
+        self.messageController = MessageController()
+        self.simSettings = SimulatorSettings()
+        self.sim = Simulator(self.simSettings, self.messageController)
+        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.messageController)
+        self.ui.Mplwidget.draw_hospital_on_map(self.con.Hospitals)
+        self.ui.hospwidget.draw_all_hosp_inf(self.con.Hospitals)
 
     def change_interval(self):
         self.timer.setInterval(self.ui.delay_time.value())
 
     def simulation(self):
-        self.sim.simulatorMianLoop(self.tablica_komunikatow)
+        self.sim.simulatorMianLoop(self.tablica_komunikatow,self.control_events)
+#        print('1111')
+#        print(self.control_events)
+#        print('2222')
+        if self.messageController.readAllObservableEventsForSimulation():
+            self.observ_from_message.append(self.messageController.readAllObservableEventsForSimulation())
+#        print(self.observ_from_message)
+
+        if len(self.observ_from_message)>0:
+            for event in self.observ_from_message:
+#                print(event)
+                if event[0][0] == 'E1o':
+#                    print('location',event[0][1][0])
+                    self.ui.Mplwidget.draw_accident_on_map(tuple(event[0][1][0]))
+                    self.observ_from_message.remove(event)
+                elif event[0][0] == 'E5o':
+                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
+                    self.ui.Mplwidget.draw_car_on_map(tuple(event[0][1][2]))
+#                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[0][1][2]))
+#                    print(event[0][1][2])
+                    self.observ_from_message.remove(event)
+                elif event[0][0] == 'E7o':
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
+#                    print(event[0][1][0])
+                    self.observ_from_message.remove(event)
+                elif event[0][0] == 'E8o':
+                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
+#                    print(event[0][1][0])
+                    self.observ_from_message.remove(event)
+                else:
+                    self.observ_from_message.remove(event)
+
+
+        if len(self.control_events)>0:
+            for event in self.control_events:
+#                print('control', event)
+                if event[0][0] == 'E1c':
+#                    print('location',event[0][1][2])
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
+#                    print('e1c',self.con.Hospitals[event[0][1][0]-1].location)
+                    self.control_events.remove(event)
+                elif event[0][0] == 'E2c':
+#                    print(event)
+#                    print('e2c',self.con.Hospitals[event[0][1][0]-1].location)
+#                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
+#                    self.ui.Mplwidget.draw_car_on_map(tuple(event[0][1][1]))
+                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[0][1][1]))
+                    self.control_events.remove(event)
+                else:
+                    self.control_events.remove(event)
+
+#            if self.control_events[0][0][0]=='E1c':
+#        print('3333')
         self.update_widgets_scrol()
         self.update_hospital_state(self.con.Hospitals)
-        self.con.controllerMainLoop()
+
+#        control_events=self.messageController.readAllControllableEventsForSimulation()
+
+        self.con.controllerMainLoop(self.tablica_komunikatow)
 
     def update_widgets_scrol(self):
         for elem in self.tablica_komunikatow:
             object = QLabel(elem)
             self.ui.verticalLayout_2.addWidget(object)
         self.tablica_komunikatow=[]
+
+    def clear_widget_scrol(self):
+        while self.ui.verticalLayout_2.count():
+            item = self.ui.verticalLayout_2.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+#            else:
+#                self.deleteItemsOfLayout(item.layout())
 
     def update_hospital_state(self,hospitals):
         index=self.ui.hospwidget.glayout.count()

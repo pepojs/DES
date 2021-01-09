@@ -45,6 +45,18 @@ class hospital_inform(QWidget):
             count_ambulances = np.in1d(hospitals[i].ambulances, 6).sum()
             self.draw_hosp_inf(i+1,count_ambulances,hospitals[i].volume,hospitals[i].personnel)
 
+    def clean_all_hosp_inf(self):
+        self.deleteItemsOfLayout(self.glayout)
+
+    def deleteItemsOfLayout(self,layout):
+         if layout is not None:
+             while layout.count():
+                 item = layout.takeAt(0)
+                 widget = item.widget()
+                 if widget is not None:
+                     widget.setParent(None)
+                 else:
+                     self.deleteItemsOfLayout(item.layout())
 
     def changecolor(self):
         self.color = QtGui.QColor(QtCore.Qt.red)
