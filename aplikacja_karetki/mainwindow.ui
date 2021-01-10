@@ -6,18 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1168</width>
+    <width>1280</width>
     <height>760</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Aplikacja zarządzania karetkami</string>
+   <string>Ambulances management application</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>950</x>
+      <x>1020</x>
       <y>500</y>
       <width>161</width>
       <height>151</height>
@@ -56,7 +56,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Czas wykonania jednej iteracji w ms</string>
+          <string>Time of iteration in ms</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -73,7 +73,7 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>950</x>
+      <x>1020</x>
       <y>10</y>
       <width>181</width>
       <height>31</height>
@@ -85,7 +85,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Historia zdarzeń</string>
+     <string>History of events</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -103,7 +103,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Mapa szpitali</string>
+     <string>Map of hospitals</string>
     </property>
    </widget>
    <widget class="MplWidget" name="Mplwidget" native="true">
@@ -129,9 +129,9 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>740</x>
+      <x>730</x>
       <y>10</y>
-      <width>111</width>
+      <width>151</width>
       <height>21</height>
      </rect>
     </property>
@@ -141,7 +141,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Stan Szpitali</string>
+     <string>State of hospitals</string>
     </property>
    </widget>
    <widget class="QWidget" name="layoutWidget">
@@ -157,7 +157,7 @@
      <item>
       <widget class="QLabel" name="label_4">
        <property name="text">
-        <string>ID szpitala</string>
+        <string>hospital ID</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -167,7 +167,7 @@
      <item>
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>liczba wolnych karetek</string>
+        <string>number of free ambulances</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -180,7 +180,7 @@
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text">
-        <string>wolny personel</string>
+        <string>free staff</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -190,7 +190,7 @@
      <item>
       <widget class="QLabel" name="label_7">
        <property name="text">
-        <string>wolne miejsca</string>
+        <string>free places</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -204,7 +204,7 @@
      <rect>
       <x>939</x>
       <y>56</y>
-      <width>201</width>
+      <width>321</width>
       <height>431</height>
      </rect>
     </property>
@@ -219,7 +219,7 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>199</width>
+       <width>319</width>
        <height>429</height>
       </rect>
      </property>
@@ -235,7 +235,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1168</width>
+     <width>1280</width>
      <height>21</height>
     </rect>
    </property>

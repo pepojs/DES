@@ -64,33 +64,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def simulation(self):
         self.sim.simulatorMianLoop(self.tablica_komunikatow,self.control_events)
-#        print('1111')
-#        print(self.control_events)
-#        print('2222')
         if self.messageController.readAllObservableEventsForSimulation():
             self.observ_from_message.append(self.messageController.readAllObservableEventsForSimulation())
-#        print(self.observ_from_message)
 
         if len(self.observ_from_message)>0:
             for event in self.observ_from_message:
-#                print(event)
                 if event[0][0] == 'E1o':
-#                    print('location',event[0][1][0])
                     self.ui.Mplwidget.draw_accident_on_map(tuple(event[0][1][0]))
                     self.observ_from_message.remove(event)
                 elif event[0][0] == 'E5o':
                     self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
                     self.ui.Mplwidget.draw_car_on_map(tuple(event[0][1][2]))
-#                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[0][1][2]))
-#                    print(event[0][1][2])
+
                     self.observ_from_message.remove(event)
                 elif event[0][0] == 'E7o':
                     self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-#                    print(event[0][1][0])
                     self.observ_from_message.remove(event)
                 elif event[0][0] == 'E8o':
                     self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-#                    print(event[0][1][0])
                     self.observ_from_message.remove(event)
                 else:
                     self.observ_from_message.remove(event)
@@ -100,28 +91,18 @@ class MainWindow(QtWidgets.QMainWindow):
             for event in self.control_events:
 #                print('control', event)
                 if event[0][0] == 'E1c':
-#                    print('location',event[0][1][2])
                     self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-#                    print('e1c',self.con.Hospitals[event[0][1][0]-1].location)
                     self.control_events.remove(event)
                 elif event[0][0] == 'E2c':
-#                    print(event)
-#                    print('e2c',self.con.Hospitals[event[0][1][0]-1].location)
-#                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-#                    self.ui.Mplwidget.draw_car_on_map(tuple(event[0][1][1]))
                     self.ui.Mplwidget.remove_accident_from_map(tuple(event[0][1][1]))
+                    self.ui.Mplwidget.remove_car_from_map(tuple(event[0][1][1]))
                     self.control_events.remove(event)
                 else:
                     self.control_events.remove(event)
 
-#            if self.control_events[0][0][0]=='E1c':
-#        print('3333')
-        self.update_widgets_scrol()
         self.update_hospital_state(self.con.Hospitals)
-
-#        control_events=self.messageController.readAllControllableEventsForSimulation()
-
         self.con.controllerMainLoop(self.tablica_komunikatow)
+        self.update_widgets_scrol()
 
     def update_widgets_scrol(self):
         for elem in self.tablica_komunikatow:
@@ -135,34 +116,14 @@ class MainWindow(QtWidgets.QMainWindow):
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
-#            else:
-#                self.deleteItemsOfLayout(item.layout())
 
     def update_hospital_state(self,hospitals):
         index=self.ui.hospwidget.glayout.count()
-#        print(self.ui.hospwidget.glayout.__dir__())
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children()[0].__dir__())
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children())
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children()[0].itemAt(0).widget().__dir__())
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children()[0].itemAt(0).widget())
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children()[0].itemAt(0))
-#        print('!!!!!!!!!!!!!!!')
-#        print(self.ui.hospwidget.glayout.children()[0].itemAt(0).widget().text())
-#        print('!!!!!!!!!!!!!!!')
         for i in range(len(hospitals)):
             count_ambulances = np.in1d(hospitals[i].ambulances, 6).sum()
             self.ui.hospwidget.glayout.children()[i].itemAt(1).widget().setText(str(count_ambulances))
             self.ui.hospwidget.glayout.children()[i].itemAt(2).widget().changecolor(hospitals[i].personnel)
             self.ui.hospwidget.glayout.children()[i].itemAt(3).widget().changecolor(hospitals[i].volume)
-#            print('i {},personel {},miejsca {}'.format(i,hospitals[i].personnel,hospitals[i].volume))
-
-#        firstwidget = self.ui.hospwidget.glayout.itemAt(3).objectName()
-#        firstwidget.setText('hola')
 
 
 if __name__ == "__main__":
@@ -170,20 +131,6 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
-
-#    window.ui.Mplwidget.draw_accident_on_map((250,250))
-#    window.ui.Mplwidget.draw_accident_on_map((350,250))
-
-#        print('!!!!!!!!!!!')
-#        print(con.messageController.readAllObservableEvents())
-#        print('!!!!!!!!!!!')
-#        print(con.messageController.readAllControllableEvents())
-#        print('!!!!!!!!!!!')
-#        con.printState()
-        #writ anything else to continue
-#    window.update_hospital_state()
-#    window.ui.Mplwidget.remove_accident_from_map((250,250))
-#    window.ui.Mplwidget.ride_to_emergency(tuple(con.Hospitals[0].location), (350,250), 2, 10)
     app.exec_()
 
 
