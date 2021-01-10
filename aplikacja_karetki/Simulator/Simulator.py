@@ -8,7 +8,7 @@ import numpy as np
 
 class SimulatorSettings():
     def __init__(self):
-        self.maxX = 550
+        self.maxX = 600
         self.maxY = 550
         self.numberOfHospital = 10
         self.numberOfAmbulances = 50
@@ -22,7 +22,7 @@ class Simulator():
         self.__emergenciesMap = dict()
         self.__time = 0
         self.__timeToNewEmergency = 1
-        self.__meanEmergency = 50
+        self.__meanEmergency = 30
         self.__sigmaEmergency = 10
         self.__thresholdForEmergency = 20
         self.__meanAmbulanceServiceEme = 10
@@ -35,11 +35,13 @@ class Simulator():
         self.__hospitalsMap = dict()
         self.__emergenciesHosAmbMap = dict()
 
+        '''
         assert(settings.maxX * settings.maxY >= settings.numberOfHospital), "Map is too small !!!"
 
         tempLockedX = [0] * (settings.maxX + 1)
         tempLockedY = [0] * (settings.maxY + 1)
 
+        
         for i in range(settings.numberOfHospital):
             x = random.randint(0, settings.maxX)
             while tempLockedX[x] != 0:
@@ -55,6 +57,37 @@ class Simulator():
 
             self.__hospitalsList.append(Hospital((x, y)))
             self.__hospitalsMap[(x,y)] = len(self.__hospitalsList)-1
+        '''
+        # Wroclaw
+        self.__hospitalsList.append(Hospital((165, 340)))
+        self.__hospitalsMap[(165, 340)] = len(self.__hospitalsList) - 1
+        # Poznan
+        self.__hospitalsList.append(Hospital((162, 219)))
+        self.__hospitalsMap[(162, 219)] = len(self.__hospitalsList) - 1
+        # Rzeszow
+        self.__hospitalsList.append(Hospital((467, 453)))
+        self.__hospitalsMap[(467, 453)] = len(self.__hospitalsList) - 1
+        # Warszawa
+        self.__hospitalsList.append(Hospital((401, 234)))
+        self.__hospitalsMap[(401, 234)] = len(self.__hospitalsList) - 1
+        # Krakow
+        self.__hospitalsList.append(Hospital((342, 439)))
+        self.__hospitalsMap[(342, 439)] = len(self.__hospitalsList) - 1
+        # Bialystok
+        self.__hospitalsList.append(Hospital((522, 157)))
+        self.__hospitalsMap[(522, 157)] = len(self.__hospitalsList) - 1
+        # Szczecin
+        self.__hospitalsList.append(Hospital((29, 125)))
+        self.__hospitalsMap[(29, 125)] = len(self.__hospitalsList) - 1
+        # Lublin
+        self.__hospitalsList.append(Hospital((500, 325)))
+        self.__hospitalsMap[(500, 325)] = len(self.__hospitalsList) - 1
+        # Olsztyn
+        self.__hospitalsList.append(Hospital((364, 99)))
+        self.__hospitalsMap[(364, 99)] = len(self.__hospitalsList) - 1
+        # Gdansk
+        self.__hospitalsList.append(Hospital((261, 44)))
+        self.__hospitalsMap[(261, 44)] = len(self.__hospitalsList) - 1
 
         for i in range(settings.numberOfAmbulances):
             self.__ambulancesList.append(Ambulance())
