@@ -25,7 +25,13 @@ class Hospital():
             return False
 
     def removeAmbulanceWithList(self, ambulanceNumber):
-        self.__ambulanceList.remove(ambulanceNumber)
+        try: 
+            self.__ambulanceList.remove(ambulanceNumber)
+        except ValueError:
+            print("Chcę usunąć ambulans ", ambulanceNumber, " ze szpitala w miejscu ", self.location)
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print(self.__ambulanceList)
+
 
     def finishPatientService(self):
         self.personnelAreAvailable = True

@@ -18,6 +18,7 @@ class MessageController():
         for i in self.__observableEventsBuffer:
             events.append(self.decode_event(i))
         self.__observableEventsBuffer.clear()
+        #print("Observable: ", events)
         return events
 
     def readAllObservableEventsForSimulation(self):

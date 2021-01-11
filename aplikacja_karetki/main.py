@@ -19,7 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.messageController = MessageController()
         self.simSettings = SimulatorSettings()
         self.sim = Simulator(self.simSettings, self.messageController)
-        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.messageController)
+        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.sim.ambulancesDistribution(), self.messageController)
         self.ui.Mplwidget
         self.ui.Mplwidget.draw_hospital_on_map(self.con.Hospitals)
         self.ui.hospwidget
@@ -33,6 +33,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.delay_time.setValue(50)
         self.ui.delay_time.valueChanged.connect(self.change_interval)
         self.timer = QtCore.QTimer(self, interval=self.ui.delay_time.value(), timeout=self.simulation)
+        self.printedCar = []
+        self.printedVirus = []
 
 
     @QtCore.pyqtSlot()
@@ -55,9 +57,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.messageController = MessageController()
         self.simSettings = SimulatorSettings()
         self.sim = Simulator(self.simSettings, self.messageController)
-        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.messageController)
+        self.con = Controller(self.simSettings, self.sim.hospitalsLocations(), self.sim.ambulancesDistribution(), self.messageController)
         self.ui.Mplwidget.draw_hospital_on_map(self.con.Hospitals)
         self.ui.hospwidget.draw_all_hosp_inf(self.con.Hospitals)
+        self.printedCar.clear()
+        self.printedVirus.clear()
 
     def change_interval(self):
         self.timer.setInterval(self.ui.delay_time.value())
@@ -68,41 +72,61 @@ class MainWindow(QtWidgets.QMainWindow):
             self.observ_from_message.append(self.messageController.readAllObservableEventsForSimulation())
 
         if len(self.observ_from_message)>0:
-            for event in self.observ_from_message:
-                if event[0][0] == 'E1o':
-                    self.ui.Mplwidget.draw_accident_on_map(tuple(event[0][1][0]))
-                    self.observ_from_message.remove(event)
-                elif event[0][0] == 'E5o':
-                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-                    self.ui.Mplwidget.draw_car_on_map(tuple(event[0][1][2]))
-
-                    self.observ_from_message.remove(event)
-                elif event[0][0] == 'E7o':
-                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-                    self.observ_from_message.remove(event)
-                elif event[0][0] == 'E8o':
-                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-                    self.observ_from_message.remove(event)
-                else:
-                    self.observ_from_message.remove(event)
+            #print(self.observ_from_message)
+            #if len(self.observ_from_message[0])>1:
+            #    self.timer.stop()
+            for event in self.observ_from_message[0]:
+                #print(event)
+                if event[0] == 'E1o':
+                    self.ui.Mplwidget.draw_accident_on_map(tuple(event[1][0]))
+                    self.printedVirus.append(tuple(event[1][0]))
+                elif event[0] == 'E4o': #Karetka dojechała na miejsce zgłoszenia - usuń ze szpitala
+                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.remove((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.ui.Mplwidget.draw_car_on_map(tuple(event[1][2]))
+                    self.printedCar.append(tuple(event[1][2]))
+                elif event[0] == 'E9o': #Karetka wróciła do szpitala bez chorego
+                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.remove((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                elif event[0] == 'E6o': #Karetka wróciła do szpitala z chorym - usuń ze szpitala
+                    self.ui.Mplwidget.remove_car_from_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.remove((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                elif event[0] == 'E10o': #Karetka wraca do szpitala bez chorego
+                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[1][2]))
+                    self.printedCar.remove(tuple(event[1][2]))
+                    self.ui.Mplwidget.remove_car_from_map(tuple(event[1][2]))
+                    self.printedVirus.remove(tuple(event[1][2]))
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.append((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+            self.observ_from_message.clear()
+                    
 
 
         if len(self.control_events)>0:
-            for event in self.control_events:
-#                print('control', event)
-                if event[0][0] == 'E1c':
-                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[0][1][0]-1].location[0]+1,self.con.Hospitals[event[0][1][0]-1].location[1]+1))
-                    self.control_events.remove(event)
-                elif event[0][0] == 'E2c':
-                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[0][1][1]))
-                    self.ui.Mplwidget.remove_car_from_map(tuple(event[0][1][1]))
-                    self.control_events.remove(event)
+            #print(self.control_events)
+            for event in self.control_events[0]:
+                #print('control', event)
+                if event[0] == 'E1c': #Karetka wyjeżdża ze szpitala
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.append((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                elif event[0] == 'E2c': #Karetka wraca do szpitala z chorym
+                    self.ui.Mplwidget.remove_accident_from_map(tuple(event[1][1]))
+                    self.ui.Mplwidget.remove_car_from_map(tuple(event[1][1]))
+                    self.printedCar.remove(tuple(event[1][1]))
+                    self.printedVirus.remove(tuple(event[1][1]))
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
+                    self.printedCar.append((self.con.Hospitals[event[1][0]-1].location[0]+1,self.con.Hospitals[event[1][0]-1].location[1]+1))
                 else:
-                    self.control_events.remove(event)
+                    self.ui.Mplwidget.draw_car_on_map((self.con.Hospitals[event[1][1]-1].location[0]+1,self.con.Hospitals[event[1][1]-1].location[1]+1))
+                    self.printedCar.append((self.con.Hospitals[event[1][1]-1].location[0]+1,self.con.Hospitals[event[1][1]-1].location[1]+1))
+            self.control_events.clear()
 
         self.update_hospital_state(self.con.Hospitals)
         self.con.controllerMainLoop(self.tablica_komunikatow)
         self.update_widgets_scrol()
+        #self.con.printState()
+        #print("Karetki: ",self.printedCar)
+        #print("Zgłosze: ",self.printedVirus)
 
     def update_widgets_scrol(self):
         for elem in self.tablica_komunikatow:

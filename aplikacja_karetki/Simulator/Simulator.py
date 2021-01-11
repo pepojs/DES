@@ -31,6 +31,7 @@ class Simulator():
         self.__sigmaAmbulance = 15
         self.__meanTimeToEmptyBed = 150
         self.__sigmaTimeToEmptyBed = 20
+        self.__minTreatmentTime = 7*24*60*60
 
         self.__hospitalsMap = dict()
         self.__emergenciesHosAmbMap = dict()
@@ -115,9 +116,14 @@ class Simulator():
             for j in range(ambulancesInHospital[i]):
                 self.__hospitalsList[i].addAmbulanceToList(temp)
                 temp += 1
+                
 
     def simulatorMianLoop(self,tablica_komunikatow,controlable_events):
         self.checkEmergencyTime(tablica_komunikatow)
+        #for hospital in self.__hospitalsList:
+        #    print(hospital.occupiedBeds)
+        
+        #print(self.__emergenciesHosAmbMap)
         # controlable_events.append(self.__messageController.readAllControllableEventsForSimulation())
         if self.__messageController.readAllControllableEventsForSimulation():
             controlable_events.append(self.__messageController.readAllControllableEventsForSimulation())
@@ -143,7 +149,7 @@ class Simulator():
             self.__emergenciesMap[(x, y)] = Emergency((x,y), self.__thresholdForEmergency)
             self.__messageController.addObservableEvent('E1o', [[x, y]])
             # print("New emergency, location: ", (x, y))
-            tablica_komunikatow.append("New emergency, location:({},{})".format(x,y) )
+            tablica_komunikatow.append("E1o: New emergency, location:({},{})".format(x,y) )
 
     def inputControllerEvents(self,tablica_komunikatow):
         events = self.__messageController.readAllControllableEvents()
@@ -169,7 +175,7 @@ class Simulator():
                 self.__emergenciesHosAmbMap[(event_param[2][0], event_param[2][1])] = [event_param[0]-1,event_param[1]-1]
 
                 # print("An ambulance {} was sent from hospital {} to emergency in location {}".format(event_param[1],event_param[0], event_param[2]))
-                tablica_komunikatow.append("An ambulance {} was sent from hospital {} to emergency in location {}".format(event_param[1],event_param[0], event_param[2]))
+                tablica_komunikatow.append("E1c: An ambulance {} was sent from hospital {} to emergency in location {}".format(event_param[1],event_param[0], event_param[2]))
                                                                                     
 
                 #print("Hospital {} location {}, ambulance {} start {}, finish {}, distance {}".format(event_param[0]-1,
@@ -199,12 +205,12 @@ class Simulator():
                 self.__hospitalsList[event_param[0] - 1].removeAmbulanceWithList(ambulanceNumber)
 
                 # print("Ambulance {} start return to hospital {}".format(ambulanceNumber + 1, event_param[0]))
-                tablica_komunikatow.append("Ambulance {} start return to hospital {}".format(ambulanceNumber + 1, event_param[0]))
+                tablica_komunikatow.append("E2c: Ambulance {} started returning to hospital {}".format(ambulanceNumber + 1, event_param[0]))
                 
                 if self.__hospitalsList[event_param[0] - 1].occupiedBeds >= self.__hospitalsList[event_param[0] - 1].maxNumberOfBeds:
                     self.__messageController.addObservableEvent('E2o', [event_param[0]])
                     # print("Hospital {} is full".format(event_param[0]))
-                    tablica_komunikatow.append("Hospital {} is full".format(event_param[0]))
+                    tablica_komunikatow.append("E2o: Hospital {} is full".format(event_param[0]))
 
             if event_name == 'E3c':
                 startTime = self.__time
@@ -226,9 +232,15 @@ class Simulator():
                 self.__hospitalsList[event_param[1]-1].addAmbulanceToList(event_param[2]-1)
 
                 # print("Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
-                tablica_komunikatow.append("Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
+                tablica_komunikatow.append("E3c: Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
                
 
+    def ambulancesDistribution(self):
+    	dist = []
+    	for hospital in self.__hospitalsList:
+            dist.append(len(hospital.getAmbulancesList()))
+    	return dist
+    	
     def hospitalsLocations(self):
     	return np.array(list(self.__hospitalsMap.keys()))
     	
@@ -255,7 +267,7 @@ class Simulator():
                         self.__ambulancesList[i].setFinishTime(finishTime)
 
                         # print("Ambulance {} start service emergence in place {}".format(i+1, ambulanceAim))
-                        tablica_komunikatow.append("Ambulance {} start service emergence in place {}".format(i+1, ambulanceAim))
+                        tablica_komunikatow.append("E4o: Ambulance {} started service in place {}".format(i+1, ambulanceAim))
 
                     elif self.__ambulancesList[i].getAimLocation() in self.__hospitalsMap:
                         hospitalNumber = self.__hospitalsMap[ambulanceAim]
@@ -273,7 +285,7 @@ class Simulator():
                         self.__ambulancesList[i].setFinishTime(finishTime)
 
                         # print("Ambulance {} came back to hospital {}".format(i + 1, hospitalNumber+1))
-                        tablica_komunikatow.append("Ambulance {} came back to hospital {}".format(i + 1, hospitalNumber+1))
+                        tablica_komunikatow.append("E6o: Ambulance {} came back to hospital {} after emergency".format(i + 1, hospitalNumber+1))
 
                 elif tempAmbulanceState == ambulanceState.PATIENT_SERVICE_AWAY:
                     emergenceLocation = tuple(self.__ambulancesList[i].getAimLocation())
@@ -288,10 +300,10 @@ class Simulator():
                         self.__ambulancesList[i].setFinishTime(0)
 
                         # print("Patient is ready to transport from {}".format(emergenceLocation))
-                        tablica_komunikatow.append("Patient is ready to transport from {}".format(emergenceLocation))
+                        tablica_komunikatow.append("E5o: Patient is ready to transport from {}".format(emergenceLocation))
 
                     else:
-                        self.__messageController.addObservableEvent('E10o', [hospitalNumber + 1, i + 1])
+                        self.__messageController.addObservableEvent('E10o', [hospitalNumber + 1, i + 1, emergenceLocation])
                         del self.__emergenciesHosAmbMap[emergenceLocation]
                         del self.__emergenciesMap[emergenceLocation]
 
@@ -309,8 +321,8 @@ class Simulator():
                         self.__ambulancesList[i].setStartTime(startTime)
                         self.__ambulancesList[i].setFinishTime(finishTime)
 
-                        # print("Ambulance {} came back to hospital {} after service emergence".format(i+1, hospitalNumber + 1))
-                        tablica_komunikatow.append("Ambulance {} came back to hospital {} after service emergence".format(i+1, hospitalNumber + 1))
+                        # print("Ambulance {} is coming back to hospital {} after service emergence".format(i+1, hospitalNumber + 1))
+                        tablica_komunikatow.append("E10o: Ambulance {} came back to hospital {} after service emergence".format(i+1, hospitalNumber + 1))
 
                 elif tempAmbulanceState == ambulanceState.PATIENT_SERVICE_HOSPITAL:
                     hospitalNumber = self.__hospitalsMap[tuple(self.__ambulancesList[i].getAimLocation())]
@@ -333,7 +345,7 @@ class Simulator():
                     if(self.__hospitalsList[hospitalNumber].timeToEmptyBed < self.__time):
 
                         finishTime = startTime + int(
-                            random.normal(self.__meanTimeToEmptyBed, self.__sigmaTimeToEmptyBed))
+                            random.normal(self.__meanTimeToEmptyBed, self.__sigmaTimeToEmptyBed)) + self.__minTreatmentTime
                         while finishTime <= startTime:
                             finishTime = startTime + int(
                                 random.normal(self.__meanTimeToEmptyBed, self.__sigmaTimeToEmptyBed))
@@ -341,7 +353,7 @@ class Simulator():
                         self.__hospitalsList[hospitalNumber].timeToEmptyBed = finishTime
 
                     # print("Ambulance {} start quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
-                    tablica_komunikatow.append("Ambulance {} start quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
+                    tablica_komunikatow.append("E7o: Ambulance {} start quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
 
                 elif tempAmbulanceState == ambulanceState.QUARANTINE:
                     hospitalNumber = self.__hospitalsMap[tuple(self.__ambulancesList[i].getAimLocation())]
@@ -353,7 +365,7 @@ class Simulator():
                     self.__ambulancesList[i].setFinishTime(0)
 
                     # print("Ambulance {} finished quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
-                    tablica_komunikatow.append("Ambulance {} finished quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
+                    tablica_komunikatow.append("E8o: Ambulance {} finished quarantine in hospital {}".format(i + 1, hospitalNumber + 1))
 
                 elif tempAmbulanceState == ambulanceState.EMPTY_RIDE:
                     hospitalNumber = self.__hospitalsMap[tuple(self.__ambulancesList[i].getAimLocation())]
@@ -365,7 +377,7 @@ class Simulator():
                     self.__ambulancesList[i].setFinishTime(0)
 
                     # print("Ambulance {} finished ride to hospital {}".format(i + 1, hospitalNumber + 1))
-                    tablica_komunikatow.append("Ambulance {} finished ride to hospital {}".format(i + 1, hospitalNumber + 1))
+                    tablica_komunikatow.append("E9o: Ambulance {} finished ride to hospital {}".format(i + 1, hospitalNumber + 1))
 
         for i in range(len(self.__hospitalsList)):
             if self.__hospitalsList[i].timeToEmptyBed == self.__time:
@@ -388,4 +400,4 @@ class Simulator():
                         self.__hospitalsList[i].timeToEmptyBed = finishTime
 
                     # print("Patient recovered in hospital {}".format(i+1))
-                    tablica_komunikatow.append("Patient recovered in hospital {}".format(i+1))
+                    tablica_komunikatow.append("E3o: Patient recovered in hospital {}".format(i+1))

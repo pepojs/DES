@@ -10,11 +10,11 @@ class Controller:
 	#Dane wejściowe do sterownika - liczba szpitali n i ich położenie locations, liczba karetek m, ograniczenia ze względu na rozmiar mapy xmax, ymax. 
 	#Liczba karetek zadawana w formie wektora Numpy.
 	#Można zadać odmienną liczbę karetek dla każdego szpitala lub podać jedną wartość - tyle samo karetek w każdym szpitalu
-	def __init__(self,settings: SimulatorSettings, hospital_locations, msgController: MessageController):
+	def __init__(self,settings: SimulatorSettings, hospital_locations, ambulances_distribution, msgController: MessageController):
 		self.Xmax = settings.maxX
 		self.Ymax = settings.maxY
 		self.Hospitals = []
-		self.ambulanceMatrix = self.createAmbulanceMatrix(settings.numberOfHospital,settings.numberOfAmbulances)
+		self.ambulanceMatrix = self.createAmbulanceMatrix(settings.numberOfHospital,ambulances_distribution)
 		self.messageController = msgController
 		for i in range(settings.numberOfHospital):
 			self.Hospitals.append(hosp.hospital_con(hospital_locations[i],self.ambulanceMatrix[i]))
@@ -42,7 +42,7 @@ class Controller:
 				#print('Event {} cannot be executed!',event_name)
 				self.messageController.addObservableEvent(event_name,event_value)
 				
-		self.ambulanceArrangementCheck(0.3,3) #Kryterium ilościowe nr 2
+		self.ambulanceArrangementCheck(1,1) #Kryterium ilościowe nr 2
 		#self.printState()
 			
 				
@@ -181,7 +181,7 @@ class Controller:
 			tablica_komunikatow.append('Błędna definicja zdarzenia E9o')
 			return False
 		elif event=='E10o':
-			if len(value)==2:
+			if len(value)==3:
 				if  self.Hospitals[value[0]-1].ambulances[value[1]-1] == ambulanceState.PATIENT_SERVICE_AWAY.value: #warunek dopuszczalności 
 					self.Hospitals[value[0]-1].ambulances[value[1]-1] = ambulanceState.EMPTY_RIDE.value
 					return True
@@ -204,7 +204,7 @@ class Controller:
 			self.messageController.addControllableEvents('E1c',[i,j,location])
 			return True
 		# print('Nie znaleziono odpowiedniego szpitala szpitala!')
-		tablica_komunikatow.append('Nie znaleziono odpowiedniego szpitala szpitala!')
+		tablica_komunikatow.append('E1c: Nie znaleziono odpowiedniego szpitala szpitala!')
 		return False
 		
 	#Funkcja znajduje szpital znajdujący się najbliżej zgłoszonego miejsca zdarzenia
@@ -235,7 +235,7 @@ class Controller:
 			self.messageController.addControllableEvents('E2c',[i,location])
 			return True
 		# print('Nie znaleziono odpowiedniego szpitala!')
-		tablica_komunikatow.append('Nie znaleziono odpowiedniego szpitala!')
+		tablica_komunikatow.append('E2c: Nie znaleziono odpowiedniego szpitala!')
 		return False
 	
 	#Funkcja znajduje szpital najbliżej miejsca zgłoszenia, który może aktualnie przyjąć chorego
@@ -261,7 +261,7 @@ class Controller:
 	def lackOfAmbulances(self):
 		emptyHospitals = []
 		for idx in range(len(self.Hospitals)):
-			i = 0
+			i = 3
 			length = len(self.Hospitals[idx].ambulances)
 			while i<length:
 				if self.Hospitals[idx].ambulances[i] == ambulanceState.READY.value or self.Hospitals[idx].ambulances[i] == ambulanceState.EMPTY_RIDE.value:
