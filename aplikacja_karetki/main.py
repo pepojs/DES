@@ -35,6 +35,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer = QtCore.QTimer(self, interval=self.ui.delay_time.value(), timeout=self.simulation)
         self.printedCar = []
         self.printedVirus = []
+        self.iterationsNumber = 0
+        #self.con.printState()
 
 
     @QtCore.pyqtSlot()
@@ -62,6 +64,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.hospwidget.draw_all_hosp_inf(self.con.Hospitals)
         self.printedCar.clear()
         self.printedVirus.clear()
+        self.iterationsNumber = 0
+        #self.con.printState()
 
     def change_interval(self):
         self.timer.setInterval(self.ui.delay_time.value())
@@ -123,7 +127,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.update_hospital_state(self.con.Hospitals)
         self.con.controllerMainLoop(self.tablica_komunikatow)
+        #print(0.4*self.simSettings.numberOfAmbulances)
+        if len(self.tablica_komunikatow)>0:
+            count_ambulances = 0
+            for hospitals in self.con.Hospitals:
+                count_ambulances += np.in1d(hospitals.ambulances, 6).sum()
+            if self.tablica_komunikatow[0][0] == '!' and (not self.sim.stability() or count_ambulances<0.4*self.simSettings.numberOfAmbulances):
+                self.timer.stop()
+                self.con.printState()
+                print("System przestał być wydolny po ",self.iterationsNumber, " iteracjach")
         self.update_widgets_scrol()
+        self.iterationsNumber += 1
         #self.con.printState()
         #print("Karetki: ",self.printedCar)
         #print("Zgłosze: ",self.printedVirus)

@@ -31,11 +31,12 @@ class Simulator():
         self.__sigmaAmbulance = 15
         self.__meanTimeToEmptyBed = 150
         self.__sigmaTimeToEmptyBed = 20
-        self.__minTreatmentTime = 7*24*60*60
+        self.__minTreatmentTime = 24*60*60
 
         self.__hospitalsMap = dict()
         self.__emergenciesHosAmbMap = dict()
 
+        #Losowe rozmieczanie szpitali
         '''
         assert(settings.maxX * settings.maxY >= settings.numberOfHospital), "Map is too small !!!"
 
@@ -89,13 +90,24 @@ class Simulator():
         # Gdansk
         self.__hospitalsList.append(Hospital((261, 44)))
         self.__hospitalsMap[(261, 44)] = len(self.__hospitalsList) - 1
-
+        '''
+        # Łódź
+        self.__hospitalsList.append(Hospital((314, 282)))
+        self.__hospitalsMap[(314, 282)] = len(self.__hospitalsList) - 1
+        # Opole
+        self.__hospitalsList.append(Hospital((241, 395)))
+        self.__hospitalsMap[(241, 395)] = len(self.__hospitalsList) - 1
+        # Bydgoszcz
+        self.__hospitalsList.append(Hospital((222, 141)))
+        self.__hospitalsMap[(222, 141)] = len(self.__hospitalsList) - 1'''
+        
         for i in range(settings.numberOfAmbulances):
             self.__ambulancesList.append(Ambulance())
 
         ambulancesInHospital = [0] * settings.numberOfHospital
         ambulancesAssing = False
 
+        #Losowy przydział ambulansów do szpiatala
         mean = int(settings.numberOfAmbulances/settings.numberOfHospital)
         sigma = (mean - 1)/3
 
@@ -113,10 +125,12 @@ class Simulator():
 
         temp = 0
         for i in range(settings.numberOfHospital):
+            #ambulancesInHospital[i] = 7 #Odkomentuj, jeśli chcesz przydzielić z góry określoną liczbę karetek do szpitala
             for j in range(ambulancesInHospital[i]):
                 self.__hospitalsList[i].addAmbulanceToList(temp)
                 temp += 1
-                
+        #for hospital in self.__hospitalsList:
+        #    print(hospital.getAmbulancesList())
 
     def simulatorMianLoop(self,tablica_komunikatow,controlable_events):
         self.checkEmergencyTime(tablica_komunikatow)
@@ -202,7 +216,11 @@ class Simulator():
                 self.__ambulancesList[ambulanceNumber].setFinishTime(finishTime)
 
                 self.__hospitalsList[event_param[0] - 1].newPatient(ambulanceNumber)
-                self.__hospitalsList[event_param[0] - 1].removeAmbulanceWithList(ambulanceNumber)
+                self.__hospitalsList[hospitalNumber].removeAmbulanceWithList(ambulanceNumber)
+                #self.__hospitalsList[event_param[0] - 1].addAmbulanceToList(ambulanceNumber)
+                #print("Ambulance {} start return to hospital {}".format(ambulanceNumber + 1, event_param[0]))
+                #for hospital in self.__hospitalsList:
+                #    print(hospital.getAmbulancesList())
 
                 # print("Ambulance {} start return to hospital {}".format(ambulanceNumber + 1, event_param[0]))
                 tablica_komunikatow.append("E2c: Ambulance {} started returning to hospital {}".format(ambulanceNumber + 1, event_param[0]))
@@ -231,10 +249,21 @@ class Simulator():
                 self.__hospitalsList[event_param[0]-1].removeAmbulanceWithList(event_param[2]-1)
                 self.__hospitalsList[event_param[1]-1].addAmbulanceToList(event_param[2]-1)
 
-                # print("Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
-                tablica_komunikatow.append("E3c: Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2] + 1, event_param[0] + 1, event_param[1] + 1))
+                # print("Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2], event_param[0], event_param[1]))
+                tablica_komunikatow.append("E3c: Ambulance {} was sent from hospital {} to hospital {}".format(event_param[2], event_param[0], event_param[1]))
                
-
+    
+    def stability(self):
+    	availableHosp = 0
+    	for hospital in self.__hospitalsList:
+    	    if(hospital.occupiedBeds < hospital.maxNumberOfBeds):
+    	        availableHosp += 1
+    	    #if(availableHosp > len(self.__hospitalsList)/2.0):
+    	        #print(availableHosp)
+    	        #return True; 
+    	#print(availableHosp, len(self.__hospitalsList)/2.0)
+    	return availableHosp > len(self.__hospitalsList)/2.0
+       
     def ambulancesDistribution(self):
     	dist = []
     	for hospital in self.__hospitalsList:

@@ -18,6 +18,8 @@ class Controller:
 		self.messageController = msgController
 		for i in range(settings.numberOfHospital):
 			self.Hospitals.append(hosp.hospital_con(hospital_locations[i],self.ambulanceMatrix[i]))
+		self.radiusE3c = 0.75
+		self.minAmbulancesE3c = 3
 			
 	def controllerMainLoop(self,tablica_komunikatow):
 		events = self.messageController.readAllObservableEvents()
@@ -42,7 +44,7 @@ class Controller:
 				#print('Event {} cannot be executed!',event_name)
 				self.messageController.addObservableEvent(event_name,event_value)
 				
-		self.ambulanceArrangementCheck(1,1) #Kryterium ilościowe nr 2
+		self.ambulanceArrangementCheck(self.radiusE3c,self.minAmbulancesE3c) #Kryterium ilościowe nr 2
 		#self.printState()
 			
 				
@@ -204,7 +206,7 @@ class Controller:
 			self.messageController.addControllableEvents('E1c',[i,j,location])
 			return True
 		# print('Nie znaleziono odpowiedniego szpitala szpitala!')
-		tablica_komunikatow.append('E1c: Nie znaleziono odpowiedniego szpitala szpitala!')
+		tablica_komunikatow.append('!E1c: Nie znaleziono odpowiedniego szpitala!')
 		return False
 		
 	#Funkcja znajduje szpital znajdujący się najbliżej zgłoszonego miejsca zdarzenia
@@ -233,9 +235,10 @@ class Controller:
 			if l!=i:
 				self.Hospitals[l-1].ambulances[j-1] = 0
 			self.messageController.addControllableEvents('E2c',[i,location])
+			#self.printState()
 			return True
 		# print('Nie znaleziono odpowiedniego szpitala!')
-		tablica_komunikatow.append('E2c: Nie znaleziono odpowiedniego szpitala!')
+		tablica_komunikatow.append('!E2c: Nie znaleziono odpowiedniego szpitala!')
 		return False
 	
 	#Funkcja znajduje szpital najbliżej miejsca zgłoszenia, który może aktualnie przyjąć chorego
@@ -261,7 +264,7 @@ class Controller:
 	def lackOfAmbulances(self):
 		emptyHospitals = []
 		for idx in range(len(self.Hospitals)):
-			i = 3
+			i = 1 #Dopuszczalny 1 ambulans wolny na stanie szpitala
 			length = len(self.Hospitals[idx].ambulances)
 			while i<length:
 				if self.Hospitals[idx].ambulances[i] == ambulanceState.READY.value or self.Hospitals[idx].ambulances[i] == ambulanceState.EMPTY_RIDE.value:
